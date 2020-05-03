@@ -1,0 +1,68 @@
+
+
+This project uses solar panels on a roof to heat water in a boiler. The system consists of roughly 9 square meters of solar panels, used to heat up a solar fuel, flowing in a separate circle and drive by pump, if the temperature in the panel chamber on the roof is higher than the temperature in a boiler in the cellar. The heated solar fuel runs through an external heat exchanger which is load on the other side with water from the boiler. This circle is driven by another pump. The third pump is in a circle which loads heat from a burner tank to the boiler in a separate circle with water, which is leaded through snaked pipes inside the boiler. The code developed contains the algorithm to control this system with three pumps and five sensors. Besides this control the measured temperature values and the system status will be cyclically stored to files in a 30 second rate. The cycle rate may be changed if a more optimized one will be found out.
+
+
+# This program  contains the control logic of a solar thermal system with
+#   2 redundant digital temperature sensors Dallas DS18B20 mounted to the
+#     upper pipes in the solar fluid circle on the roof
+#     TempUp1 - fixed to the upper part of the solar panel collector pipe
+#     TempUp2 - fixed to the upper part of the solar panel collector pipe
+#   1 digital temperature sensor Dallas DS18B20 mounted in the roof chamber
+#     with the sun strip absorbers
+#     TempUpAir - mounted inside the roof chamber with the solar panels
+#   2 digital temperature sensors Dallas DS18B20 mounted at the hot water tank,
+#     one at the lower end and one at the upper end of the hot water tank
+#     in the cellar
+#     TempHotWaterTank_down - mounted at the low side of the hot water tank
+#     TempHotWaterTank_up - mounted at the upper side of the hot water tank
+#   3 water pumps for the following fluid circle
+#     PumpS - circle solar panels to the external heat exchanger - solar fluid
+#     PumpW - circle hot water tank to the external heat exchanger - water
+#     PumpF - circle hot water tank to the oil burner boiler - water
+#
+# Very important HW experience:
+#   If only 3 dallas sensors were used, there was no detection problem.
+#   Using a fourth sensor the 1-wire system collapsed. The solution was
+#   to reduce the 4.7 kOhm resistor to the half, which was practically done
+#   by using two 4.7 kOhm resistors in parallel. Now the system is working
+#   quite robust. In a next step two additional sensor will be used.
+#   If the problem appears again, then a next 4.7 kOhm resistor will be
+#   used. This is a proposal found in the internet. There it is recommended
+#   to lower the resistor down to 1.2 kOhm to be able to use up to 10 
+#   1-wire sensors.
+#
+# General conditions of the program
+# CycleTime = 10 seconds
+#
+# The control logic is following:
+#     If both the temperature of the upper sensors are 8 degrees higher than
+#     the temperature on the lower side of the hot water tank, then the pumps
+#     to the external heat changer will start.
+#     If both, the temeratures of the upper sensors are less than 5 degrees
+#     higher than the temperature of the lower side of the hot water tank,
+#     then the pumps to the external heat changer will stopp.
+#     If the lower temperature sensor value is above 60 degrees the hot water
+#     tank is fully loaded.
+#     Now the load keep management and heat transfer has to work.
+#     If the upper sensors show still higher temperatures, the pump from the
+#     oil burner chamber starts regularily in 2 minute cycles to transport
+#     energy from the hot water tank to the burner tank. During this time
+#     also the other two pumps are working. After 30 seconds the all the
+#     pumps are stopped. Starting the next 2 minute cycle all pumps start to
+#     run again as long as the upper temperatures are 5 degrees higher than
+#     the cellar sensors.
+#
+##############################################################################
+import os, time
+
+#--- Description -------------------------------------------------------------
+# Every sensor in the system has its unique name. The name contains the
+# location of the sensor.
+# There are sensors on the roof in the thermal chamber, where the panels are
+# mounted. Two sensors are fixed to the solar fuel pipe. The other one
+# one measures the air in the thermal chamber on the roof.
+# In the cellar there are two sensors fixed to the hot water tank.
+# One is mounted near the buttom of hot water tank, the other one is fixed
+# near the top of the tank.
+
